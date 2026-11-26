@@ -31,7 +31,7 @@ Source for the background memorandum:
 https://www.fhwa.dot.gov/bridge/pubs/Memo-SNBI_Updates_Schema_ValidationLogic_NBISBridgeLength.pdf
 
 ## Confirmed identification rule: Previous Bridge Number (B.ID.03)
-The Errata No. 2 PDF text states:
+The consolidated Errata No. 2 PDF text states:
 - Format AN(30015)
 - Multiple previous bridge numbers may be reported, separated by pipe delimiters.
 - Report 0 if no previous bridge number.
@@ -45,16 +45,7 @@ Implementation implication:
 - Because this is read from the consolidated errata document, verify the current operative status of the specific wording before treating it as a new binding rule; the document's front notice applies to Errata No. 2 redlines.
 
 ## Other scope reviewed
-The document's table of contents confirms the complete SNBI data organization:
-1. Bridge Identification
-2. Bridge Material and Type
-3. Bridge Geometry
-4. Features
-5. Loads, Load Rating, and Posting
-6. Inspections
-7. Bridge Condition
-
-It also contains comprehensive example data sets, item indexes, and component condition rating guidance. This supports the relational ingestion architecture already specified, but the actual JSON schema still needs to be acquired and tested against the public download.
+The document's table of contents confirms the complete SNBI data organization: Bridge Identification; Bridge Material and Type; Bridge Geometry; Features; Loads, Load Rating, and Posting; Inspections; and Bridge Condition. It also contains comprehensive example data sets, item indexes, and component condition rating guidance. This supports the relational ingestion architecture already specified, but the actual JSON schema still needs to be acquired and tested against the public download.
 
 ## Parser and model safeguards
 1. Maintain specification_version, schema_version, validation_logic_version, and errata_status as separate metadata.
