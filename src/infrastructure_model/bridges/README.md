@@ -1,5 +1,18 @@
-# Bridge longitudinal utilities
+# Bridge data ingestion primitives
 
-The initial module contains conservative, dependency-free data-governance helpers for bridge identity, inspection-event reconstruction, condition observation handling, element quantity checks, and training-cohort admission.
+`nbi_csv.py` provides a deliberately lossless first-pass reader for legacy
+NBI CSV exports. It preserves every source field as text, requires explicit
+header names, fingerprints the source file, rejects row-width/header
+ambiguities, and profiles year/state counts and duplicate source keys without
+silently dropping records.
 
-These utilities do not resolve real-world physical bridge identity automatically, do not infer repairs, and do not estimate deterioration coefficients. All ambiguous links remain explicit. Synthetic unit tests are in `tests/bridges/`.
+It does **not**:
+- infer physical bridge identity across years;
+- map legacy NBI fields to SNBI;
+- convert codes, dates, units, or identifiers;
+- validate engineering semantics;
+- claim that a portal export reproduces FHWA totals.
+
+The first test fixture is synthetic and tests parser behavior only. A real
+FHWA export is still required before this reader can be considered tested
+against the actual portal's CSV dialect and headers.
