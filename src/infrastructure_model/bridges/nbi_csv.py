@@ -3,6 +3,10 @@
 This module deliberately performs no semantic field conversion. Identifiers,
 codes, dates, and numeric-looking values remain source strings until a
 versioned, field-specific normalization rule is applied downstream.
+
+The reader is lazy: it opens the source only when iteration begins, closes it
+when iteration completes or is closed, and checks that the file fingerprint
+has not changed between manifest creation and a complete read.
 """
 from __future__ import annotations
 
@@ -28,12 +32,20 @@ class NbiCsvManifest:
     encoding: str
 
 
-def sha256_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
+def file_fingerprint(path: str | Path, chunk_size: int = 1024 * 1024) -> tuple[str, int]:
+    """Return SHA-256 and byte count for the exact current file contents."""
     digest = hashlib.sha256()
+    byte_count = 0
     with Path(path).open("rb") as stream:
         for chunk in iter(lambda: stream.read(chunk_size), b""):
             digest.update(chunk)
-    return digest.hexdigest()
+            byte_count += len(chunk)
+    return digest.hexdigest(), byte_count
+
+
+def sha256_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
+    """Compatibility helper returning only the file SHA-256 digest."""
+    return file_fingerprint(path, chunk_size)[0]
 
 
 def read_nbi_csv(
@@ -46,35 +58,37 @@ def read_nbi_csv(
         "STRUCTURE_NUMBER_008",
     ),
 ) -> tuple[NbiCsvManifest, Iterator[dict[str, str]]]:
-    """Return a file manifest and a one-pass iterator of raw string rows.
+    """Return a manifest and one-pass iterator of raw string rows.
 
     Header matching is exact by design. If a portal export uses different
     display headers, callers must provide an explicit, documented profile;
-    this function will not guess aliases or silently rename columns.
+    this function will not guess aliases or silently rename columns. The
+    iterator must be consumed fully for the end-of-read fingerprint check.
     """
     source = Path(path)
     if not source.is_file():
         raise NbiCsvError(f"CSV source does not exist: {source}")
 
-    stream = source.open("r", encoding=encoding, newline="")
-    reader = csv.DictReader(
-        stream, restkey="__EXTRA_FIELDS__", restval=None
-    )
-    headers = tuple(reader.fieldnames or ())
+    digest, byte_count = file_fingerprint(source)
+    with source.open("r", encoding=encoding, newline="") as stream:
+        reader = csv.reader(stream)
+        headers = tuple(next(reader, ()))
+
     if not headers:
-        stream.close()
         raise NbiCsvError("CSV has no header row")
     if len(set(headers)) != len(headers):
-        stream.close()
         raise NbiCsvError("CSV contains duplicate column headers")
-
     missing = [field for field in required_fields if field not in headers]
     if missing:
-        stream.close()
         raise NbiCsvError(f"CSV is missing required source fields: {missing}")
 
     def rows() -> Iterator[dict[str, str]]:
-        try:
+        with source.open("r", encoding=encoding, newline="") as stream:
+            reader = csv.DictReader(
+                stream, restkey="__EXTRA_FIELDS__", restval=None
+            )
+            if tuple(reader.fieldnames or ()) != headers:
+                raise NbiCsvError("CSV header changed between manifest and row read")
             for line_number, row in enumerate(reader, start=2):
                 if row.get("__EXTRA_FIELDS__") is not None:
                     raise NbiCsvError(
@@ -89,16 +103,16 @@ def read_nbi_csv(
                         f"CSV row {line_number} has fewer values than the header"
                     )
                 row.pop("__EXTRA_FIELDS__", None)
-                # DictReader returns strings; do not coerce source values.
                 yield {key: value for key, value in row.items()}
-        finally:
-            stream.close()
+        final_digest, final_byte_count = file_fingerprint(source)
+        if (final_digest, final_byte_count) != (digest, byte_count):
+            raise NbiCsvError("CSV source changed during ingestion; discard this read")
 
     manifest = NbiCsvManifest(
         path=str(source),
-        sha256=sha256_file(source),
-        byte_count=source.stat().st_size,
-        row_count=None,  # Known only after the one-pass iterator is consumed.
+        sha256=digest,
+        byte_count=byte_count,
+        row_count=None,
         headers=headers,
         encoding=encoding,
     )

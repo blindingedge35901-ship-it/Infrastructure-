@@ -49,6 +49,22 @@ The following were reported in prior research but still require exact archive fi
 - The reported 2024 FHWA preservation roadmap finding that data on post-preservation deterioration, service life, cost, and treatment effectiveness are limited. Verify exact source and passage before assigning treatment coefficients.
 - The lack of a complete national bridge-level history connecting all funding stages to specific interventions and subsequent condition. This requires a targeted data availability review before being stated as a definitive national absence.
 
+## Acquisition and ingestion progress — 2026-11-27
+
+### Public FHWA/Socrata route
+The current FHWA National Bridge Inventory dataset on data.transportation.gov is dataset `pced-83j4`. Data.gov metadata identifies FHWA's Office of Bridges and Structures as publisher, marks the dataset public-domain/CC0, reports a last-modified date of 2026-11-02, and gives temporal applicability as 2024/2025. The update date is not a 2026 data vintage. The catalog describes one row per bridge and 124 columns. The displayed source headers include `YEAR`, `STATE_CODE_001`, and `STRUCTURE_NUMBER_008`; the actual downloaded CSV header has not yet been inspected.
+
+Socrata's current SODA3 documentation states that a full export of a public dataset through `/api/v3/views/{id}/export.csv` does not require authentication. Filtered exports and query endpoints require an app token or user credentials. A full export is a human-readable export that honors view formatting; `/query.csv` is intended for machine processing and requires authentication. The official full-export route has been identified, but this execution environment has not successfully retrieved its bytes. Do not report a successful download, row count, hash, or empirical parse.
+
+### Other acquisition routes
+FHWA's official 2026 page publishes state-level bridge counts and links to Excel, JSON, and GeoJSON files; it reports 624,939 total bridges and 9,018 for Colorado. The official 2025 ASCII page offers national and state ZIP archives, including highway-only and all-record variants. These are candidate direct routes for later retrieval; the links have not been downloaded or parsed in this environment. The InfoBridge All Submittals route remains the preferred historical inspection/event route, but the portal is under maintenance per the user's observation.
+
+### Ingestion implementation
+A dependency-free, lossless CSV reader is present at `src/infrastructure_model/bridges/nbi_csv.py`. It preserves source values as strings, requires exact source headers, rejects duplicate headers and row-width mismatches, and profiles year/state counts and duplicate source keys without dropping records. The 2026-11-27 hardening makes file opening lazy, closes the file on iterator completion/closure, and compares SHA-256 plus byte count before and after a complete read to detect source mutation. The iterator must be consumed fully for the end-of-read integrity check. Synthetic unit tests cover leading zeroes, duplicate detection, malformed files, and mutation detection. No FHWA source file has yet been tested.
+
+### Current evidence boundary
+The FHWA 2025/2026 published aggregate tables remain source-reported baselines. The CSV reader is tested only with synthetic fixtures. The 2026 SNBI JSON inspection was based on excerpts exposed by the web viewer, not a complete local download or full-schema validation. No historical bridge-level panel, identity crosswalk, deterioration estimate, intervention effect, or predictive coefficient has been calibrated.
+
 ## Modeling implications
 1. Use a stock-and-flow framing for inventory, condition transitions, deterioration, preservation, rehabilitation, replacement, and removals—but estimate transition and treatment parameters only where longitudinal evidence supports them.
 2. Maintain parallel bridge-count and deck-area-weighted condition views.
@@ -60,12 +76,13 @@ The following were reported in prior research but still require exact archive fi
 8. Do not invent deterioration or treatment coefficients. Use calibrated estimates only after data suitability and uncertainty are demonstrated.
 
 ## Remaining research before model specification
-- Reproduce 2025 counts and deck-area totals from the exact archived data files and document filters, geographic coverage, and exclusions.
+- Retrieve and fingerprint the official 2024/2025 Socrata export or FHWA state files; inspect actual headers, parse all rows, and reproduce counts and deck-area totals with documented filters, geographic coverage, and exclusions.
 - Reconcile (or retain as unresolved) the eight-bridge difference between the CRS condition count and FHWA cost-table count.
 - Reproduce the 2024–2025 cost comparison and identify the exact price basis, unit-cost averaging, and data vintages.
 - Investigate 2011–2012 archive scope and the actual acquisition date of the 2018 archive copy.
 - Compare Coding Guide versions and Item 58 coding rules, including the 1995 transition.
 - Build a versioned NBI-to-SNBI data dictionary and identifier crosswalk with confidence levels; preserve raw identifiers and temporary codes.
+- Re-test the InfoBridge All Submittals export when the portal maintenance window ends; record export scope, selected fields, and any truncation/size limits.
 - Build inspection-history and component-completeness measures.
 - Define separate condition, safety/load, service importance, network consequence, and investment modules.
 - Assess available bridge-level project/intervention records before attempting causal treatment-effect estimates.

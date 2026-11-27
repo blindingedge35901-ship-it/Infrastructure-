@@ -47,6 +47,22 @@ class TestLosslessNbiCsvIngestion(unittest.TestCase):
         self.assertEqual(result["duplicate_source_key_count"], 1)
         self.assertEqual(result["duplicate_source_keys"]["2024|08|0001"], 2)
 
+    def test_detects_source_change_between_manifest_and_consumption(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_csv(
+                directory,
+                ["YEAR", "STATE_CODE_001", "STRUCTURE_NUMBER_008"],
+                [["2025", "08", "0001"]],
+            )
+            manifest, rows = read_nbi_csv(path)
+            path.write_text(
+                "YEAR,STATE_CODE_001,STRUCTURE_NUMBER_008\n2025,08,0002\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(NbiCsvError, "changed"):
+                list(rows)
+            self.assertEqual(len(manifest.sha256), 64)
+
     def test_rejects_missing_required_fields(self):
         with tempfile.TemporaryDirectory() as directory:
             path = self.write_csv(directory, ["YEAR", "STATE_CODE_001"], [["2025", "08"]])
