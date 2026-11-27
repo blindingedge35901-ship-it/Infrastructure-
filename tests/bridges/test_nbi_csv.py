@@ -31,7 +31,7 @@ class TestLosslessNbiCsvIngestion(unittest.TestCase):
             self.assertEqual(record["STRUCTURE_NUMBER_008"], "00001234")
             self.assertEqual(record["STATE_CODE_001"], "08")
             self.assertEqual(record["COUNTY_CODE_003"], "001")
-            self.assertEqual(manifest.row_count, -1)
+            self.assertIsNone(manifest.row_count)
             self.assertEqual(len(manifest.sha256), 64)
 
     def test_profiles_year_state_and_duplicate_keys_without_dropping(self):

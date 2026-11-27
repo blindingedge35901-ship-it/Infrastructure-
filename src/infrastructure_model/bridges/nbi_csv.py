@@ -23,7 +23,7 @@ class NbiCsvManifest:
     path: str
     sha256: str
     byte_count: int
-    row_count: int
+    row_count: int | None
     headers: tuple[str, ...]
     encoding: str
 
@@ -57,7 +57,9 @@ def read_nbi_csv(
         raise NbiCsvError(f"CSV source does not exist: {source}")
 
     stream = source.open("r", encoding=encoding, newline="")
-    reader = csv.DictReader(stream, restkey="__EXTRA_FIELDS__", restval=None)
+    reader = csv.DictReader(
+        stream, restkey="__EXTRA_FIELDS__", restval=None
+    )
     headers = tuple(reader.fieldnames or ())
     if not headers:
         stream.close()
@@ -78,12 +80,16 @@ def read_nbi_csv(
                     raise NbiCsvError(
                         f"CSV row {line_number} has more values than the header"
                     )
-                if any(value is None for key, value in row.items() if key != "__EXTRA_FIELDS__"):
+                if any(
+                    value is None
+                    for key, value in row.items()
+                    if key != "__EXTRA_FIELDS__"
+                ):
                     raise NbiCsvError(
                         f"CSV row {line_number} has fewer values than the header"
                     )
                 row.pop("__EXTRA_FIELDS__", None)
-                # DictReader returns strings; do not coerce any source value.
+                # DictReader returns strings; do not coerce source values.
                 yield {key: value for key, value in row.items()}
         finally:
             stream.close()
@@ -92,7 +98,7 @@ def read_nbi_csv(
         path=str(source),
         sha256=sha256_file(source),
         byte_count=source.stat().st_size,
-        row_count=-1,  # Filled by profile_nbi_rows after a complete pass.
+        row_count=None,  # Known only after the one-pass iterator is consumed.
         headers=headers,
         encoding=encoding,
     )
@@ -134,7 +140,8 @@ def profile_nbi_rows(
         "row_count": total,
         "rows_by_year": dict(sorted(by_year.items())),
         "rows_by_year_state": {
-            "|".join(key): count for key, count in sorted(by_year_state.items())
+            "|".join(key): count
+            for key, count in sorted(by_year_state.items())
         },
         "blank_identifier_rows": blank_identifier_rows,
         "duplicate_source_keys": duplicate_keys,
