@@ -48,7 +48,7 @@ Recommended deduplication key:
 - inspection type;
 - reconstructed inspection year/month (MMYY).
 
-Do not deduplicate solely by the raw structure number across all time because the bridge identity research has already established that structure numbers can change. Use the identity crosswalk and preserve the source structure number used in each annual file.
+Do not deduplicate solely by the raw structure number across all time because bridge structure numbers can change. Use the identity crosswalk and preserve the source structure number used in each annual file.
 
 If multiple records for the same asset/type/month contain conflicting interval or inspection metadata, retain the most recent source vintage as FHWA directs, but preserve the prior versions and log the conflict rather than deleting history.
 
