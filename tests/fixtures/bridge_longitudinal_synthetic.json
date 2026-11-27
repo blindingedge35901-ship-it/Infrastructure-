@@ -1,0 +1,30 @@
+{
+  "fixture_status": "SYNTHETIC_TEST_DATA_NOT_EMPIRICAL",
+  "bridges": [
+    {
+      "asset_hypothesis": "asset-alpha",
+      "records": [
+        {"source_vintage": "2020", "source_structure_number": "0001", "latest_year_structure_number": "0002", "inspection_month": "0620", "inspection_type": "ROUTINE", "deck_rating": 6},
+        {"source_vintage": "2021", "source_structure_number": "0002", "latest_year_structure_number": "0002", "inspection_month": "0620", "inspection_type": "ROUTINE", "deck_rating": 5},
+        {"source_vintage": "2021", "source_structure_number": "0002", "latest_year_structure_number": "0002", "inspection_month": "0620", "inspection_type": "UNDERWATER", "deck_rating": 5}
+      ],
+      "identity_links": [
+        {"predecessor": "0001", "successor": "0002", "relationship": "CANDIDATE_ONLY", "evidence": ["synthetic same-location evidence"]}
+      ]
+    },
+    {
+      "asset_hypothesis": "asset-beta",
+      "records": [
+        {"source_vintage": "2020", "source_structure_number": "0001", "location": "SYNTHETIC-OTHER-LOCATION"}
+      ],
+      "expected_identity_conflict": true
+    }
+  ],
+  "condition_observations": [
+    {"id": "obs-a", "asset_hypothesis": "asset-alpha", "component": "DECK", "rating": 0, "timing_basis": "ACTUAL_INSPECTION_DATE"},
+    {"id": "obs-b", "asset_hypothesis": "asset-alpha", "component": "SUPERSTRUCTURE", "rating": "N", "timing_basis": "VINTAGE_ONLY"},
+    {"id": "obs-c", "asset_hypothesis": "asset-alpha", "component": "SUBSTRUCTURE", "rating": "MI-T", "timing_basis": "VINTAGE_ONLY", "transition_year": true},
+    {"id": "obs-d", "asset_hypothesis": "asset-alpha", "component": "CULVERT", "rating": null, "timing_basis": "UNKNOWN"}
+  ],
+  "element_example": {"total_quantity": 10, "condition_state_quantities": [2, 3, 4, 1]}
+}
